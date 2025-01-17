@@ -52,6 +52,20 @@
       <p>Várható maximális nyeremény: <span id="max-win" class="font-bold">-</span> Ft</p>
       <p>Várható maximális haszon: <span id="max-profit" class="font-bold">-</span> Ft</p>
     </div>
+
+    <div id="combinations-container" class="mt-4 hidden">
+      <table class="w-full border border-gray-300">
+        <thead>
+          <tr class="bg-gray-100">
+            <th class="border p-2">#</th>
+            <th class="border p-2">Kombináció</th>
+            <th class="border p-2">Odds</th>
+            <th class="border p-2">Nyeremény (Ft)</th>
+          </tr>
+        </thead>
+        <tbody id="combinations-table"></tbody>
+      </table>
+    </div>
   </div>
 
   <script>
@@ -220,6 +234,7 @@
         for (let i = 0; i < combinations.length; i++) {
           totalOdds += combinations[i].reduce((a, b) => a * b, 1);
         }
+        displayCombinations(combinations, betAmount);
       }
 
       let maxWin = (betAmount * totalOdds).toFixed(2);
@@ -229,6 +244,28 @@
       document.getElementById('total-odds').innerText = totalOdds.toFixed(3);
       document.getElementById('max-win').innerText = maxWin;
       document.getElementById('max-profit').innerText = maxProfit;
+    }
+
+    function displayCombinations(combos, betAmount) {
+      const tableBody = document.getElementById("combinations-table");
+      tableBody.innerHTML = "";
+      let index = 1;
+      combos.forEach(combo => {
+        let combinationOdds = combo.reduce((acc, val) => acc * val, 1);
+        const row = `<tr class='border border-gray-300'>
+                      <td class='border border-gray-300 p-2 text-center'>${index}</td>
+                      <td class='border border-gray-300 p-2 text-center'>
+                        <div class='grid grid-cols-${combo.length} w-full h-full divide-x divide-gray-200'>
+                          ${combo.map(odd => `<span class='text-center flex items-center justify-center'>${odd.toFixed(2)}</span>`).join('')}
+                        </div>
+                      </td>
+                      <td class='border border-gray-300 p-2 text-center'>${combinationOdds.toFixed(2)}</td>
+                      <td class='border border-gray-300 p-2 text-center'>${(betAmount * combinationOdds).toFixed(2)}</td>
+                    </tr>`;
+        tableBody.innerHTML += row;
+        index++;
+      });
+      document.getElementById("combinations-container").classList.remove("hidden");
     }
   </script>
 </body>
