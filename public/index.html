@@ -8,7 +8,7 @@
 <body class="bg-gray-100 p-6">
   <div class="max-w-lg mx-auto p-6 bg-white rounded-lg shadow-md">
     <h2 class="text-lg font-bold mb-4">Fogadási Kalkulátor</h2>
-    
+
     <!-- Események hozzáadása -->
     <div id="events-container" class="space-y-2">
       <div class="flex items-center space-x-2" id="event-1">
@@ -20,7 +20,7 @@
       </div>
     </div>
     <button onclick="addEvent()" id="add-event" class="mt-2 px-4 py-2 bg-green-500 text-white rounded">+ Esemény hozzáadása</button>
-    
+
     <!-- Kombináció és Kötési lehetőségek -->
     <div class="mt-4">
       <label class="block text-gray-700 font-medium">Kombináció típusa</label>
@@ -29,21 +29,21 @@
         <option value="system">Rendszer (kombinációs)</option>
       </select>
     </div>
-    
+
     <div id="system-options" class="mt-4 hidden">
       <label class="block text-gray-700 font-medium">Kombinációs fogadás</label>
       <select id="system-type" class="block w-full mt-1 p-2 border rounded"></select>
       <p class="mt-2 text-gray-700">Szelvények száma: <span id="ticket-count" class="font-bold">-</span></p>
     </div>
-    
+
     <!-- Alap tét -->
     <div class="mt-4">
       <label class="block text-gray-700 font-medium">Alap tét (Ft)</label>
       <input type="number" id="bet-amount" value="1000" step="100" min="0" class="w-full mt-1 p-2 border rounded">
     </div>
-    
+
     <button onclick="calculateBet()" class="w-full mt-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Számítás</button>
-    
+
     <!-- Eredmény -->
     <div class="mt-6 bg-gray-100 p-4 rounded">
       <h3 class="text-gray-700 font-semibold">Összegzés</h3>
@@ -55,8 +55,20 @@
   </div>
 
   <script>
+    const advancedSystems = {
+      "Trixie 4": { events: 3, bets: [3, 1] },
+      "Patent 7": { events: 3, bets: [3, 3, 1] },
+      "Yankee 11": { events: 4, bets: [6, 4, 1] },
+      "Lucky 15": { events: 4, bets: [4, 6, 4, 1] },
+      "Canadian 26": { events: 5, bets: [10, 10, 5, 1] },
+      "Lucky 31": { events: 5, bets: [5, 10, 10, 5, 1] },
+      "Heinz 57": { events: 6, bets: [15, 20, 15, 6, 1] },
+      "Lucky 63": { events: 6, bets: [6, 15, 20, 15, 6, 1] },
+      "Super Heinz 120": { events: 7, bets: [21, 35, 35, 21, 7, 1] },
+      "Goliath 247": { events: 8, bets: [28, 56, 70, 56, 28, 8, 1] }
+    };
     let eventCount = 1;
-  
+
     function addEvent() {
       if (++eventCount >= 8) {
         document.getElementById('add-event').style.display = 'none';
@@ -73,7 +85,7 @@
       container.insertAdjacentHTML('beforeend', eventHTML);
       updateCombinationOptions();
     }
-  
+
     function removeEvent(id) {
       if (--eventCount < 8) {
         document.getElementById('add-event').style.display = 'block';
@@ -81,45 +93,61 @@
       document.getElementById(`event-${id}`).remove();
       updateCombinationOptions();
     }
-  
+
     function updateCombinationOptions() {
       const combinationType = document.getElementById('combination-type').value;
       const systemOptions = document.getElementById('system-options');
       const systemTypeSelect = document.getElementById('system-type');
-  
+
       if (combinationType === 'system' && eventCount > 2) {
         systemOptions.classList.remove('hidden');
         systemTypeSelect.innerHTML = '';
-  
+
         for (let i = 2; i <= eventCount - 1; i++) {
           const option = document.createElement('option');
           option.value = i;
           option.textContent = `${i}/${eventCount}`;
           systemTypeSelect.appendChild(option);
         }
-        
+
+        for (const [name, { events, bets }] of Object.entries(advancedSystems)) {
+          if (events === eventCount) {
+            const option = document.createElement('option');
+            option.value = bets.reduce((acc, curr) => acc + curr, 0);
+            option.textContent = name;
+            systemTypeSelect.appendChild(option);
+          }
+        }
+
         systemTypeSelect.addEventListener('change', calculateTickets);
         calculateTickets();
       } else {
         systemOptions.classList.add('hidden');
       }
     }
-  
+
     function calculateTickets() {
       const systemTypeSelect = document.getElementById('system-type');
       const k = parseInt(systemTypeSelect.value) || 2;
+      const advanced = Object.keys(advancedSystems).includes(systemTypeSelect.selectedOptions[0].textContent);
       const n = eventCount;
-      
+
+      if (advanced) {
+        let ticketCount = k;
+        document.getElementById('ticket-count').innerText = ticketCount.toFixed(0);
+        return ticketCount;
+      }
+
       if (k > n || k < 2) {
         document.getElementById('ticket-count').innerText = '0';
         return 0;
       }
-  
+
       let ticketCount = factorial(n) / (factorial(k) * factorial(n - k));
       document.getElementById('ticket-count').innerText = ticketCount.toFixed(0);
       return ticketCount;
     }
-  
+
     function factorial(num) {
       if (num <= 1) return 1;
       let result = 1;
@@ -128,18 +156,18 @@
       }
       return result;
     }
-  
+
     function calculateBet() {
       let totalOdds = 1;
       let betAmount = parseFloat(document.getElementById('bet-amount').value);
       let totalBet = 0;
       let combinationType = document.getElementById('combination-type').value;
-  
+
       if (combinationType === 'single' || combinationType === 'multi') {
         for (let i = 1; i <= eventCount; i++) {
           const oddsInput = document.getElementById(`odds-${i}`);
           const excludeCheckbox = document.getElementById(`exclude-${i}`);
-          
+
           if (oddsInput && oddsInput.value && !excludeCheckbox.checked) {
             totalBet += betAmount;
             totalOdds *= parseFloat(oddsInput.value);
@@ -149,46 +177,54 @@
         const tickets = calculateTickets();
         totalBet = betAmount * tickets;
         totalOdds = 0;
-        
+
         const oddsList = [];
         for (let i = 1; i <= eventCount; i++) {
           const oddsInput = document.getElementById(`odds-${i}`);
           const excludeCheckbox = document.getElementById(`exclude-${i}`);
-          
+
           if (oddsInput && oddsInput.value) {
             oddsList.push(parseFloat(excludeCheckbox.checked ? 0 : oddsInput.value));
           }
         }
-        
-        const k = parseInt(document.getElementById('system-type').value);
-        const n = oddsList.length;
-        
-        const combinations = [];
+
         const getCombinations = (arr, k, start, current) => {
           if (combinations.length === Math.pow(2, arr.length) - 1) return;
-          
+
           if (current.length === k) {
             combinations.push([...current]);
             return;
           }
-          
+
           for (let i = start; i < arr.length; i++) {
             current.push(arr[i]);
             getCombinations(arr, k, i + 1, current);
             current.pop();
           }
         };
-        getCombinations(oddsList, k, 0, []);
-        console.log(combinations)
-        
+
+        const systemTypeSelect = document.getElementById('system-type');
+        const advanced = Object.keys(advancedSystems).includes(systemTypeSelect.selectedOptions[0].textContent);
+        const k = parseInt(document.getElementById('system-type').value);
+        const n = oddsList.length;
+        const combinations = [];
+        if (advanced) {
+          const { bets } = advancedSystems[systemTypeSelect.selectedOptions[0].textContent];
+          for (let i = oddsList.length - bets.length; i < oddsList.length; i++) {
+            getCombinations(oddsList, i + 1, 0, []);
+          }
+        } else {
+          getCombinations(oddsList, k, 0, []);
+        }
+
         for (let i = 0; i < combinations.length; i++) {
           totalOdds += combinations[i].reduce((a, b) => a * b, 1);
         }
       }
-      
+
       let maxWin = (betAmount * totalOdds).toFixed(2);
       let maxProfit = (maxWin - totalBet).toFixed(2);
-  
+
       document.getElementById('total-bet').innerText = totalBet.toFixed(2);
       document.getElementById('total-odds').innerText = totalOdds.toFixed(3);
       document.getElementById('max-win').innerText = maxWin;
